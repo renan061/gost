@@ -1,6 +1,7 @@
 package gosti
 
 import (
+	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/renan061/gost"
 	"net/http"
@@ -16,10 +17,39 @@ const (
 
 var authenticator *JWTAuthenticator
 
+func parse(token string) (JWTClaims, error) {
+	tk, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
+		// Checking for signing method (JWT security breach)
+		if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
+			str := "unexpected signing method: " + tk.Header["alg"].(string)
+			return nil, errors.New(str)
+		}
+		return []byte(encryptionKey), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !tk.Valid {
+		return nil, errors.New("could not parse token")
+	}
+
+	claims := make(map[string]string)
+	for key, value := range tk.Claims {
+		claims[key] = value.(string)
+	}
+	return claims, nil
+}
+
+func validate(info gost.AuthInfo, claims JWTClaims) bool {
+	return true
+}
+
 func init() {
 	authenticator = &JWTAuthenticator{
 		Responder:     &BasicResponder{},
-		Validator:     &JWTValidatorMock{},
+		Validate:      validate,
+		Parse:         parse,
 		EncryptionKey: []byte(encryptionKey),
 	}
 }
@@ -82,16 +112,6 @@ func testJwt(w *httptest.ResponseRecorder, r *http.Request, t *testing.T,
 	if body := w.Body.String(); body != expectedBody {
 		t.Errorf("wrong body: wanted %v, got %v", expectedBody, body)
 	}
-}
-
-type JWTValidatorMock struct{}
-
-func (v JWTValidatorMock) Validate(info gost.AuthInfo, claims JWTClaims) bool {
-	// expectedClaims := info.(map[string]string)
-	// if reflect.DeepEqual(claims, expectedClaims) {
-	// 	return false
-	// }
-	return true
 }
 
 // Generic generate token function

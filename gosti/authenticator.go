@@ -1,8 +1,6 @@
 package gosti
 
 import (
-	"errors"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/renan061/gost"
 	"log"
 	"net/http"
@@ -15,22 +13,21 @@ import (
 //
 // ==================================================
 
-type JWTValidator interface {
-	Validate(gost.AuthInfo, JWTClaims) bool
-}
-
-type JWTClaims map[string]string
-
 type JWTAuthenticator struct {
 	// Responder for errors
 	Responder gost.Responder
 
+	// Parses the token
+	Parse func(string) (JWTClaims, error)
+
 	// Validates the claims
-	Validator JWTValidator
+	Validate func(gost.AuthInfo, JWTClaims) bool
 
 	// Used by the parser
 	EncryptionKey []byte
 }
+
+type JWTClaims map[string]string
 
 func (a JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	info gost.AuthInfo) (gost.Claims, bool) {
@@ -61,7 +58,7 @@ func (a JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 
 	// Parses the token
 	token := strs[1]
-	claims, err := a.parse(token)
+	claims, err := a.Parse(token)
 	if err != nil {
 		log.Println("gosti.jwtauth: invalid token (" + err.Error() + ")")
 		a.Responder.Respond(w, response)
@@ -69,36 +66,11 @@ func (a JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	}
 
 	// Validates the claims
-	if !a.Validator.Validate(info, claims) {
+	if !a.Validate(info, claims) {
 		log.Println("gosti.jwtauth: could not validate")
 		a.Responder.Respond(w, response)
 		return nil, false
 	}
 
 	return claims, true
-}
-
-// TODO: Remove this and require it to be an external dependency
-func (a JWTAuthenticator) parse(token string) (JWTClaims, error) {
-	tk, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
-		// Checking for signing method (JWT security breach)
-		if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
-			str := "unexpected signing method: " + tk.Header["alg"].(string)
-			return nil, errors.New(str)
-		}
-		return a.EncryptionKey, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if !tk.Valid {
-		return nil, errors.New("could not parse token")
-	}
-
-	claims := make(map[string]string)
-	for key, value := range tk.Claims {
-		claims[key] = value.(string)
-	}
-	return claims, nil
 }
