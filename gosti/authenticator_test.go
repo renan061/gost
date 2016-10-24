@@ -6,16 +6,29 @@ import (
 	"github.com/renan061/gost"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 
 	"testing"
 )
 
 const (
-	jwtErrMsg     = `{"message":"could not authenticate"}`
-	encryptionKey = "encryption_key"
+	jwtBodyErrMsg = `{"message":"could not authenticate"}`
+	encryptionKey = "enc_key"
 )
 
 var authenticator *JWTAuthenticator
+
+func generateToken(claims JWTClaims, encryptionKey string) (string, error) {
+	tk := jwt.New(jwt.SigningMethodHS256)
+	for key, value := range claims {
+		tk.Claims[key] = value
+	}
+	token, err := tk.SignedString([]byte(encryptionKey))
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
 
 func parse(token string) (JWTClaims, error) {
 	tk, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
@@ -63,28 +76,27 @@ func init() {
 func TestJWTAuthenticator_EmptyHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
-	testJwt(w, r, t, nil, http.StatusUnauthorized, jwtErrMsg)
+	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 }
 
 func TestJWTAuthenticator_InvalidHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test1", nil)
 	r.Header.Set("Authorization", "MaybeBearer MaybeToken SomethingElse")
-	testJwt(w, r, t, nil, http.StatusUnauthorized, jwtErrMsg)
+	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 
 	w = httptest.NewRecorder()
 	r, _ = http.NewRequest("GET", "/test2", nil)
 	r.Header.Set("Authorization", "NotBearer Token")
-	testJwt(w, r, t, nil, http.StatusUnauthorized, jwtErrMsg)
+	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 }
 
 func TestJWTAuthenticator_InvalidToken(t *testing.T) {
-	claims := map[string]string{"1": "2", "2": "3", "3": "4"}
-	token, _ := generateToken(claims, "another_encryption_key")
+	token, _ := generateToken(map[string]string{"1": "2"}, "another_enc_key")
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
-	testJwt(w, r, t, claims, http.StatusUnauthorized, jwtErrMsg)
+	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 }
 
 func TestJWTAuthenticator_Ok(t *testing.T) {
@@ -93,36 +105,32 @@ func TestJWTAuthenticator_Ok(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
-	testJwt(w, r, t, claims, http.StatusOK, "")
+	testJwt(w, r, t, http.StatusOK, "", claims, true)
 }
 
-// ==================================================
-//
-//	Auxiliary
-//
-// ==================================================
-
+// Auxiliary
 func testJwt(w *httptest.ResponseRecorder, r *http.Request, t *testing.T,
-	expectedClaims gost.AuthInfo, expectedCode int, expectedBody string) {
+	expectedCode int, expectedBody string, expectedClaims map[string]string,
+	expectedOk bool) {
 
-	authenticator.Authenticate(w, r, expectedClaims)
+	claims, ok := authenticator.Authenticate(w, r, nil)
+	if (ok && claims == nil) || (!ok && claims != nil) {
+		t.Error("inconsistent return form authenticate")
+	}
+	if ok != expectedOk {
+		t.Errorf("wrong return: wanted %v, got %v", expectedOk, ok)
+	}
 	if code := w.Code; code != expectedCode {
 		t.Errorf("wrong status code: wanted %v, got %v", expectedCode, code)
 	}
 	if body := w.Body.String(); body != expectedBody {
 		t.Errorf("wrong body: wanted %v, got %v", expectedBody, body)
 	}
-}
-
-// Generic generate token function
-func generateToken(claims JWTClaims, encryptionKey string) (string, error) {
-	tk := jwt.New(jwt.SigningMethodHS256)
-	for key, value := range claims {
-		tk.Claims[key] = value
+	if claims != nil {
+		c := map[string]string(claims.(JWTClaims))
+		if !reflect.DeepEqual(expectedClaims, c) {
+			t.Errorf("unmatching claims: wanted %v, got %v", expectedClaims, c)
+			return
+		}
 	}
-	token, err := tk.SignedString([]byte(encryptionKey))
-	if err != nil {
-		return "", err
-	}
-	return token, nil
 }
