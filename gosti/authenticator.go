@@ -15,16 +15,15 @@ import (
 
 type JWTAuthenticator struct {
 	// Responder for errors
-	Responder gost.Responder
+	Responder    gost.Responder
+	TokenManager JWTTokenManager
+}
 
+type JWTTokenManager interface {
 	// Parses the token
-	Parse func(string) (JWTClaims, error)
-
+	Parse(string) (JWTClaims, error)
 	// Validates the claims
-	Validate func(gost.AuthInfo, JWTClaims) bool
-
-	// Used by the parser
-	EncryptionKey []byte
+	Validate(gost.AuthInfo, JWTClaims) bool
 }
 
 type JWTClaims map[string]string
@@ -58,7 +57,7 @@ func (a JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 
 	// Parses the token
 	token := strs[1]
-	claims, err := a.Parse(token)
+	claims, err := a.TokenManager.Parse(token)
 	if err != nil {
 		log.Println("gosti.jwtauth: invalid token (" + err.Error() + ")")
 		a.Responder.Respond(w, response)
@@ -66,7 +65,7 @@ func (a JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	}
 
 	// Validates the claims
-	if !a.Validate(info, claims) {
+	if !a.TokenManager.Validate(info, claims) {
 		log.Println("gosti.jwtauth: could not validate")
 		a.Responder.Respond(w, response)
 		return nil, false

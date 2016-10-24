@@ -1,9 +1,6 @@
 package gosti
 
 import (
-	"errors"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/renan061/gost"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -13,57 +10,19 @@ import (
 
 const (
 	jwtBodyErrMsg = `{"message":"could not authenticate"}`
-	encryptionKey = "enc_key"
+	jwtEncKey     = "encryption_key"
 )
 
-var authenticator *JWTAuthenticator
-
-func generateToken(claims JWTClaims, encryptionKey string) (string, error) {
-	tk := jwt.New(jwt.SigningMethodHS256)
-	for key, value := range claims {
-		tk.Claims[key] = value
-	}
-	token, err := tk.SignedString([]byte(encryptionKey))
-	if err != nil {
-		return "", err
-	}
-	return token, nil
-}
-
-func parse(token string) (JWTClaims, error) {
-	tk, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
-		// Checking for signing method (JWT security breach)
-		if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
-			str := "unexpected signing method: " + tk.Header["alg"].(string)
-			return nil, errors.New(str)
-		}
-		return []byte(encryptionKey), nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if !tk.Valid {
-		return nil, errors.New("could not parse token")
-	}
-
-	claims := make(map[string]string)
-	for key, value := range tk.Claims {
-		claims[key] = value.(string)
-	}
-	return claims, nil
-}
-
-func validate(info gost.AuthInfo, claims JWTClaims) bool {
-	return true
-}
+var (
+	authenticator *JWTAuthenticator
+	tm            *tokenManager
+)
 
 func init() {
+	tm = &tokenManager{[]byte(jwtEncKey)}
 	authenticator = &JWTAuthenticator{
-		Responder:     &BasicResponder{},
-		Validate:      validate,
-		Parse:         parse,
-		EncryptionKey: []byte(encryptionKey),
+		Responder:    &BasicResponder{},
+		TokenManager: tm,
 	}
 }
 
@@ -92,7 +51,10 @@ func TestJWTAuthenticator_InvalidHeader(t *testing.T) {
 }
 
 func TestJWTAuthenticator_InvalidToken(t *testing.T) {
-	token, _ := generateToken(map[string]string{"1": "2"}, "another_enc_key")
+	claims := map[string]string{"1": "2"}
+	tm.EncryptionKey = []byte("another_encryption_key")
+	token, _ := tm.Create(claims)
+	tm.EncryptionKey = []byte(jwtEncKey)
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
@@ -101,7 +63,7 @@ func TestJWTAuthenticator_InvalidToken(t *testing.T) {
 
 func TestJWTAuthenticator_Ok(t *testing.T) {
 	claims := map[string]string{"1": "2", "2": "3", "3": "4"}
-	token, _ := generateToken(claims, encryptionKey)
+	token, _ := tm.Create(claims)
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
