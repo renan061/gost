@@ -3,7 +3,8 @@
 # gosti
 #
 
-all: test
+all:
+	@- go build
 
-test:
+test: all
 	@- go test ./...

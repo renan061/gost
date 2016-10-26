@@ -2,8 +2,8 @@ package gosti
 
 import (
 	"errors"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/renan061/gost"
+	"strings"
 )
 
 // ==================================================
@@ -17,37 +17,24 @@ type tokenManager struct {
 }
 
 func (tm tokenManager) Create(claims JWTClaims) (string, error) {
-	tk := jwt.New(jwt.SigningMethodHS256)
+	token := string(tm.EncryptionKey) + "#"
 	for key, value := range claims {
-		tk.Claims[key] = value
-	}
-	token, err := tk.SignedString(tm.EncryptionKey)
-	if err != nil {
-		return "", err
+		token = token + key + "," + value + "#"
 	}
 	return token, nil
 }
 
 func (tm tokenManager) Parse(token string) (JWTClaims, error) {
-	tk, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
-		// Checking for signing method (JWT security breach)
-		if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
-			str := "unexpected signing method: " + tk.Header["alg"].(string)
-			return nil, errors.New(str)
-		}
-		return tm.EncryptionKey, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if !tk.Valid {
+	arr := strings.Split(token, "#")
+	if arr[0] != string(tm.EncryptionKey) {
 		return nil, errors.New("could not parse token")
 	}
 
+	arr = arr[1 : len(arr)-1]
 	claims := make(map[string]string)
-	for key, value := range tk.Claims {
-		claims[key] = value.(string)
+	for _, e := range arr {
+		keyvalue := strings.Split(e, ",")
+		claims[keyvalue[0]] = keyvalue[1]
 	}
 	return claims, nil
 }
