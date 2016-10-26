@@ -3,7 +3,6 @@ package gosti
 import (
 	"encoding/json"
 	"github.com/renan061/gost"
-	"log"
 	"net/http"
 )
 
@@ -12,6 +11,8 @@ import (
 //	BasicResponder
 //
 // ==================================================
+
+const basicResponderLogId = "gosti.basic_responder"
 
 type BasicResponse struct {
 	PrettyJson bool        `json:"-"`
@@ -27,7 +28,7 @@ func (_ BasicResponder) Respond(w http.ResponseWriter, r gost.Response) bool {
 	response, ok := r.(BasicResponse)
 	if !ok {
 		http.Error(w, "", http.StatusInternalServerError)
-		log.Println("response type assertion failed")
+		logError(basicResponderId, "response type assertion failed")
 		return false
 	}
 
@@ -40,7 +41,7 @@ func (_ BasicResponder) Respond(w http.ResponseWriter, r gost.Response) bool {
 	}
 	if err != nil {
 		http.Error(w, "", http.StatusInternalServerError)
-		log.Println(err)
+		logError(basicResponderId, err.Error())
 		return false
 	}
 
@@ -57,7 +58,7 @@ func (_ BasicResponder) Respond(w http.ResponseWriter, r gost.Response) bool {
 	_, err = w.Write(j)
 	if err != nil {
 		http.Error(w, "", http.StatusInternalServerError)
-		log.Println(err)
+		logError(basicResponderId, err.Error())
 		return false
 	}
 

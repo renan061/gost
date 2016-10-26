@@ -8,6 +8,18 @@ import (
 )
 
 // Basic testing needs refactoring into multiple little tests
+func TestBasicResponder_InvalidResponse(t *testing.T) {
+	responder := &BasicResponder{}
+	w := httptest.NewRecorder()
+	response := "not_basic_response"
+	expectedCode := http.StatusInternalServerError
+
+	responder.Respond(w, response)
+	if code := w.Code; code != expectedCode {
+		t.Errorf("wrong status code: wanted %v, got %v", expectedCode, code)
+	}
+}
+
 func TestBasicResponder(t *testing.T) {
 	responder := &BasicResponder{}
 	var response BasicResponse

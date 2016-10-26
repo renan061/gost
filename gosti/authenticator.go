@@ -2,7 +2,6 @@ package gosti
 
 import (
 	"github.com/renan061/gost"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -37,7 +36,7 @@ func (a JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	// Checks if authorization header is set
 	authStr := r.Header.Get("Authorization")
 	if authStr == "" {
-		log.Println("gosti.jwtauth: empty header")
+		logError(jwtAuthenticatorId, "empty header")
 		a.Responder.Respond(w, response)
 		return nil, false
 	}
@@ -45,12 +44,12 @@ func (a JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	// Checks if authorization header is set correctly
 	strs := strings.Split(authStr, " ")
 	if len(strs) != 2 {
-		log.Println("gosti.jwtauth: invalid header")
+		logError(jwtAuthenticatorId, "invalid header")
 		a.Responder.Respond(w, response)
 		return nil, false
 	}
 	if scheme := strs[0]; scheme != "Bearer" {
-		log.Println("gosti.jwtauth: invalid header")
+		logError(jwtAuthenticatorId, "invalid header")
 		a.Responder.Respond(w, response)
 		return nil, false
 	}
@@ -59,14 +58,14 @@ func (a JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	token := strs[1]
 	claims, err := a.TokenManager.Parse(token)
 	if err != nil {
-		log.Println("gosti.jwtauth: invalid token (" + err.Error() + ")")
+		logError(jwtAuthenticatorId, "invalid token ("+err.Error()+")")
 		a.Responder.Respond(w, response)
 		return nil, false
 	}
 
 	// Validates the claims
 	if !a.TokenManager.Validate(info, claims) {
-		log.Println("gosti.jwtauth: could not validate")
+		logError(jwtAuthenticatorId, "could not validate")
 		a.Responder.Respond(w, response)
 		return nil, false
 	}
