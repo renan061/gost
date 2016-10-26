@@ -1,67 +1,89 @@
 package gosti
 
 import (
-	"fmt"
+	"github.com/renan061/gost"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-// Basic testing needs refactoring into multiple little tests
-func TestBasicResponder_InvalidResponse(t *testing.T) {
-	responder := &BasicResponder{}
-	w := httptest.NewRecorder()
-	response := "not_basic_response"
-	expectedCode := http.StatusInternalServerError
-
-	responder.Respond(w, response)
-	if code := w.Code; code != expectedCode {
-		t.Errorf("wrong status code: wanted %v, got %v", expectedCode, code)
-	}
-}
+// ==================================================
+//
+//	BasicResponder
+//
+//	TODO
+//	- Test PrettyJson option
+//	- Test json.Marshal error
+//	- Test w.Write error
+//
+// ==================================================
 
 func TestBasicResponder(t *testing.T) {
+	const (
+		msg  = "testing the testy test"
+		data = "data many datas"
+	)
+
+	tests := []struct {
+		response       gost.Response
+		expectedCode   int
+		expectedBody   string
+		expectedReturn bool
+	}{
+		{
+			// Invalid response
+			response:       "not_basic_response",
+			expectedCode:   http.StatusInternalServerError,
+			expectedBody:   "\n", // Does not return ""
+			expectedReturn: false,
+		}, {
+			// Default Response Code
+			response:       BasicResponse{},
+			expectedCode:   http.StatusOK,
+			expectedBody:   "{}",
+			expectedReturn: true,
+		}, {
+			// Given Response Code
+			response:       BasicResponse{Code: http.StatusCreated},
+			expectedCode:   http.StatusCreated,
+			expectedBody:   "{}",
+			expectedReturn: true,
+		}, {
+			// Response with Message
+			response:       BasicResponse{Message: msg},
+			expectedCode:   http.StatusOK,
+			expectedBody:   `{"message":"` + msg + `"}`,
+			expectedReturn: true,
+		}, {
+			// Response with Data
+			response:       BasicResponse{Data: data},
+			expectedCode:   http.StatusOK,
+			expectedBody:   `{"data":"` + data + `"}`,
+			expectedReturn: true,
+		}, {
+			// Response with Message and Data
+			response:       BasicResponse{Message: msg, Data: data},
+			expectedCode:   http.StatusOK,
+			expectedBody:   `{"message":"` + msg + `","data":"` + data + `"}`,
+			expectedReturn: true,
+		},
+	}
+
 	responder := &BasicResponder{}
-	var response BasicResponse
 	var w *httptest.ResponseRecorder
-	var expected string
-
-	// Empty response
-	response = BasicResponse{}
-
-	w = httptest.NewRecorder()
-	responder.Respond(w, response)
-	if code := w.Code; code != http.StatusOK {
-		t.Errorf("wrong status code: wanted %v, got %v", http.StatusOK, code)
-	}
-
-	// Response with code
-	response = BasicResponse{Code: http.StatusCreated}
-
-	w = httptest.NewRecorder()
-	responder.Respond(w, response)
-	if code := w.Code; code != response.Code {
-		t.Errorf("wrong status code: wanted %v, got %v", response.Code, code)
-	}
-
-	// Response with message
-	response = BasicResponse{Message: "testing the testy thing"}
-	expected = `{"message":"` + response.Message + `"}`
-
-	w = httptest.NewRecorder()
-	responder.Respond(w, response)
-	if body := w.Body.String(); body != expected {
-		t.Errorf("wrong body: wanted %v, got %v", expected, body)
-	}
-
-	// Response with data
-	response = BasicResponse{Message: "message", Data: "data"}
-	expected = fmt.Sprintf(`{"message":"%v","data":"%v"}`, response.Message,
-		response.Data)
-
-	w = httptest.NewRecorder()
-	responder.Respond(w, response)
-	if body := w.Body.String(); body != expected {
-		t.Errorf("wrong body: wanted %v, got %v", expected, body)
+	var ok bool
+	for _, test := range tests {
+		w = httptest.NewRecorder()
+		ok = responder.Respond(w, test.response)
+		if code := w.Code; code != test.expectedCode {
+			t.Errorf("wrong status code: wanted %v, got %v",
+				test.expectedCode, code)
+		}
+		if body := w.Body.String(); body != test.expectedBody {
+			t.Errorf("wrong body: wanted %v, got %v", test.expectedBody, body)
+		}
+		if ok != test.expectedReturn {
+			t.Errorf("wrong return: wanted %v, got %v", test.expectedReturn, ok)
+		}
 	}
 }

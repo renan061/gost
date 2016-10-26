@@ -30,24 +30,27 @@ func init() {
 //
 //	JWTAuthenticator
 //
+//	TODO
+//	- Refactor to look like responder_test.go
+//
 // ==================================================
 
 func TestJWTAuthenticator_EmptyHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
-	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
+	testJwtAuth(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 }
 
 func TestJWTAuthenticator_InvalidHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test1", nil)
 	r.Header.Set("Authorization", "MaybeBearer MaybeToken SomethingElse")
-	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
+	testJwtAuth(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 
 	w = httptest.NewRecorder()
 	r, _ = http.NewRequest("GET", "/test2", nil)
 	r.Header.Set("Authorization", "NotBearer Token")
-	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
+	testJwtAuth(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 }
 
 func TestJWTAuthenticator_InvalidToken(t *testing.T) {
@@ -58,7 +61,7 @@ func TestJWTAuthenticator_InvalidToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
-	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
+	testJwtAuth(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 }
 
 func TestJWTAuthenticator_Ok(t *testing.T) {
@@ -67,11 +70,11 @@ func TestJWTAuthenticator_Ok(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
-	testJwt(w, r, t, http.StatusOK, "", claims, true)
+	testJwtAuth(w, r, t, http.StatusOK, "", claims, true)
 }
 
 // Auxiliary
-func testJwt(w *httptest.ResponseRecorder, r *http.Request, t *testing.T,
+func testJwtAuth(w *httptest.ResponseRecorder, r *http.Request, t *testing.T,
 	expectedCode int, expectedBody string, expectedClaims map[string]string,
 	expectedOk bool) {
 

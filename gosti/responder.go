@@ -12,8 +12,6 @@ import (
 //
 // ==================================================
 
-const basicResponderLogId = "gosti.basic_responder"
-
 type BasicResponse struct {
 	PrettyJson bool        `json:"-"`
 	Code       int         `json:"-"`
