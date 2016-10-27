@@ -72,9 +72,11 @@ func TestBasicResponder(t *testing.T) {
 	responder := &BasicResponder{}
 	var w *httptest.ResponseRecorder
 	var ok bool
+
 	for _, test := range tests {
 		w = httptest.NewRecorder()
 		ok = responder.Respond(w, test.response)
+
 		if code := w.Code; code != test.expectedCode {
 			t.Errorf("wrong status code: wanted %v, got %v",
 				test.expectedCode, code)

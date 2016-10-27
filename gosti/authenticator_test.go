@@ -15,11 +15,11 @@ const (
 
 var (
 	authenticator *JWTAuthenticator
-	tm            *tokenManager
+	tm            *tokenManagerMock
 )
 
 func init() {
-	tm = &tokenManager{[]byte(jwtEncKey)}
+	tm = &tokenManagerMock{[]byte(jwtEncKey)}
 	authenticator = &JWTAuthenticator{
 		Responder:    &BasicResponder{},
 		TokenManager: tm,
