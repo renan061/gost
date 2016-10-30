@@ -16,10 +16,10 @@ import (
 // ==================================================
 
 func TestBasicDecoder(t *testing.T) {
-	var (
-		validBodyA   = requestBodyMockA{I: "i_value", J: "j_value", K: "k_value"}
-		invalidBodyA = requestBodyMockA{I: "i_value", J: "j_value", K: ""}
-	)
+	// var (
+	// 	validBodyA   = requestBodyMockA{I: "i_value", J: "j_value", K: "k_value"}
+	// 	invalidBodyA = requestBodyMockA{I: "i_value", J: "j_value", K: ""}
+	// )
 
 	tests := []struct {
 		json           string
@@ -27,14 +27,18 @@ func TestBasicDecoder(t *testing.T) {
 		expectedObject interface{}
 		expectedReturn bool
 	}{
+		// ioutil.ReadAll
+		// json.Unmarshal
+		// rb == nil
+		// rb.Valid()
 		{
-			json:           "{}",
-			object:         requestBodyMockA{},
+			json:           `{"a":"b"}`,
+			object:         &requestBodyMockA{},
 			expectedObject: nil, // TODO: Rename
 			expectedReturn: false,
 		}, {
 			json:           "{}",
-			object:         requestBodyMockA{},
+			object:         &requestBodyMockA{},
 			expectedObject: nil, // TODO: Rename
 			expectedReturn: false,
 		},

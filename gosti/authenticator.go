@@ -14,7 +14,8 @@ import (
 
 type JWTAuthenticator struct {
 	// Responder for errors
-	Responder    gost.Responder
+	Responder gost.Responder
+
 	TokenManager JWTTokenManager
 }
 
