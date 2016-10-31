@@ -1,8 +1,9 @@
-package gosti
+package tests
 
 import (
 	"errors"
 	"github.com/renan061/gost"
+	"github.com/renan061/gost/gosti"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ type tokenManagerMock struct {
 	EncryptionKey []byte
 }
 
-func (tm tokenManagerMock) Create(claims JWTClaims) (string, error) {
+func (tm tokenManagerMock) Create(claims gosti.JwtClaims) (string, error) {
 	token := string(tm.EncryptionKey) + "#"
 	for key, value := range claims {
 		token = token + key + "," + value + "#"
@@ -24,7 +25,7 @@ func (tm tokenManagerMock) Create(claims JWTClaims) (string, error) {
 	return token, nil
 }
 
-func (tm tokenManagerMock) Parse(token string) (JWTClaims, error) {
+func (tm tokenManagerMock) Parse(token string) (gosti.JwtClaims, error) {
 	arr := strings.Split(token, "#")
 	if arr[0] != string(tm.EncryptionKey) {
 		return nil, errors.New("could not parse token")
@@ -39,7 +40,8 @@ func (tm tokenManagerMock) Parse(token string) (JWTClaims, error) {
 	return claims, nil
 }
 
-func (tm tokenManagerMock) Validate(info gost.AuthInfo, claims JWTClaims) bool {
+func (tm tokenManagerMock) Validate(info gost.AuthInfo,
+	claims gosti.JwtClaims) bool {
 	return true
 }
 

@@ -1,7 +1,8 @@
-package gosti
+package tests
 
 import (
 	"github.com/renan061/gost"
+	"github.com/renan061/gost/gosti"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -38,38 +39,38 @@ func TestBasicResponder(t *testing.T) {
 			expectedReturn: false,
 		}, {
 			// Default Response Code
-			response:       BasicResponse{},
+			response:       gosti.BasicResponse{},
 			expectedCode:   http.StatusOK,
-			expectedBody:   "{}",
+			expectedBody:   newResponseBody("", ""),
 			expectedReturn: true,
 		}, {
 			// Given Response Code
-			response:       BasicResponse{Code: http.StatusCreated},
+			response:       gosti.BasicResponse{Code: http.StatusCreated},
 			expectedCode:   http.StatusCreated,
-			expectedBody:   "{}",
+			expectedBody:   newResponseBody("", ""),
 			expectedReturn: true,
 		}, {
 			// Response with Message
-			response:       BasicResponse{Message: msg},
+			response:       gosti.BasicResponse{Message: msg},
 			expectedCode:   http.StatusOK,
-			expectedBody:   `{"message":"` + msg + `"}`,
+			expectedBody:   newResponseBody(msg, ""),
 			expectedReturn: true,
 		}, {
 			// Response with Data
-			response:       BasicResponse{Data: data},
+			response:       gosti.BasicResponse{Data: data},
 			expectedCode:   http.StatusOK,
-			expectedBody:   `{"data":"` + data + `"}`,
+			expectedBody:   newResponseBody("", data),
 			expectedReturn: true,
 		}, {
 			// Response with Message and Data
-			response:       BasicResponse{Message: msg, Data: data},
+			response:       gosti.BasicResponse{Message: msg, Data: data},
 			expectedCode:   http.StatusOK,
-			expectedBody:   `{"message":"` + msg + `","data":"` + data + `"}`,
+			expectedBody:   newResponseBody(msg, data),
 			expectedReturn: true,
 		},
 	}
 
-	responder := &BasicResponder{}
+	responder := gosti.NewBasicResponder()
 	var w *httptest.ResponseRecorder
 	var ok bool
 

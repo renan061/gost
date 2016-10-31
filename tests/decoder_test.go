@@ -1,9 +1,10 @@
-package gosti
+package tests
 
 import (
 	"bytes"
 	"encoding/json"
 	"github.com/renan061/gost"
+	"github.com/renan061/gost/gosti"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -70,8 +71,8 @@ func TestBasicDecoder(t *testing.T) {
 			object:         &requestBodyMockA{},
 			expectedObject: invalidBodyA,
 			expectedReturn: false,
-			expectedCode:   HttpStatusUnprocessableEntity,
-			expectedBody:   `{"message":"` + errRequestBodyMockA + `"}`,
+			expectedCode:   gosti.HttpStatusUnprocessableEntity,
+			expectedBody:   newResponseBody(errRequestBodyMockA, ""),
 		}, {
 			// 3: Valid B
 			json:           validMapB,
@@ -86,8 +87,8 @@ func TestBasicDecoder(t *testing.T) {
 			object:         &requestBodyMockB{},
 			expectedObject: invalidBodyB,
 			expectedReturn: false,
-			expectedCode:   HttpStatusUnprocessableEntity,
-			expectedBody:   `{"message":"` + errRequestBodyMockA + `"}`,
+			expectedCode:   gosti.HttpStatusUnprocessableEntity,
+			expectedBody:   newResponseBody(errRequestBodyMockA, ""),
 		}, {
 			// 5: Valid C
 			json:           validMapC,
@@ -102,8 +103,8 @@ func TestBasicDecoder(t *testing.T) {
 			object:         &requestBodyMockC{},
 			expectedObject: invalidBodyC,
 			expectedReturn: false,
-			expectedCode:   HttpStatusUnprocessableEntity,
-			expectedBody:   `{"message":"` + errRequestBodyMockC + `"}`,
+			expectedCode:   gosti.HttpStatusUnprocessableEntity,
+			expectedBody:   newResponseBody(errRequestBodyMockC, ""),
 		}, {
 			// 7: Empty body
 			json:           map[string]interface{}{"irrelevant": "data"},
@@ -118,12 +119,12 @@ func TestBasicDecoder(t *testing.T) {
 			object:         &requestBodyMockD{},
 			expectedObject: &requestBodyMockD{},
 			expectedReturn: false,
-			expectedCode:   HttpStatusUnprocessableEntity,
-			expectedBody:   `{"message":"` + ErrBasicDecoderInvalidBody + `"}`,
+			expectedCode:   gosti.HttpStatusUnprocessableEntity,
+			expectedBody:   newResponseBody(gosti.ErrDecoderInvalidBody, ""),
 		},
 	}
 
-	decoder := &BasicDecoder{Responder: &BasicResponder{}}
+	decoder := gosti.NewBasicDecoder()
 	var w *httptest.ResponseRecorder
 	var r *http.Request
 	var jsonBytes []byte

@@ -1,6 +1,8 @@
-package gosti
+package tests
 
 import (
+	"github.com/renan061/gost"
+	"github.com/renan061/gost/gosti"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -14,16 +16,13 @@ const (
 )
 
 var (
-	authenticator *JWTAuthenticator
+	authenticator gost.Authenticator
 	tm            *tokenManagerMock
 )
 
 func init() {
 	tm = &tokenManagerMock{[]byte(jwtEncKey)}
-	authenticator = &JWTAuthenticator{
-		Responder:    &BasicResponder{},
-		TokenManager: tm,
-	}
+	authenticator = gosti.NewJwtAuthenticator(tm)
 }
 
 // ==================================================
@@ -92,7 +91,7 @@ func testJwtAuth(w *httptest.ResponseRecorder, r *http.Request, t *testing.T,
 		t.Errorf("wrong body: wanted %v, got %v", expectedBody, body)
 	}
 	if claims != nil {
-		c := map[string]string(claims.(JWTClaims))
+		c := map[string]string(claims.(gosti.JwtClaims))
 		if !reflect.DeepEqual(expectedClaims, c) {
 			t.Errorf("unmatching claims: wanted %v, got %v", expectedClaims, c)
 		}

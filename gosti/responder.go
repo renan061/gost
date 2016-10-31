@@ -19,10 +19,14 @@ type BasicResponse struct {
 	Data       interface{} `json:"data,omitempty"`
 }
 
-type BasicResponder struct{}
+type basicResponder struct{}
 
-func (_ BasicResponder) Respond(w http.ResponseWriter, r gost.Response) bool {
-	// Checks if r is of the correct type
+func NewBasicResponder() gost.Responder {
+	return &basicResponder{}
+}
+
+func (_ basicResponder) Respond(w http.ResponseWriter, r gost.Response) bool {
+	// Checks if "r" is of the correct type
 	response, ok := r.(BasicResponse)
 	if !ok {
 		http.Error(w, "", http.StatusInternalServerError)

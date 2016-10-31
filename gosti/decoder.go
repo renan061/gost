@@ -15,16 +15,20 @@ import (
 // ==================================================
 
 const (
-	ErrBasicDecoderInternal    = "internal error"
-	ErrBasicDecoderInvalidBody = "invalid body for request"
+	ErrDecoderInternal    = "decoder internal error"
+	ErrDecoderInvalidBody = "invalid body for request"
 )
 
-type BasicDecoder struct {
+type basicDecoder struct {
 	// Responder for errors
-	Responder gost.Responder
+	Responder *basicResponder
 }
 
-func (d BasicDecoder) Decode(w http.ResponseWriter, r *http.Request,
+func NewBasicDecoder() gost.Decoder {
+	return &basicDecoder{NewBasicResponder().(*basicResponder)}
+}
+
+func (d basicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 	rb gost.RequestBody) bool {
 
 	// Reading the request's body
@@ -32,7 +36,7 @@ func (d BasicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		logError(basicDecoderId, "")
 		d.Responder.Respond(w, BasicResponse{
-			Message: ErrBasicDecoderInternal,
+			Message: ErrDecoderInternal,
 			Code:    http.StatusInternalServerError,
 		})
 		return false
@@ -42,7 +46,7 @@ func (d BasicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 	if err := json.Unmarshal(body, rb); err != nil {
 		logError(basicDecoderId, err.Error())
 		d.Responder.Respond(w, BasicResponse{
-			Message: ErrBasicDecoderInvalidBody,
+			Message: ErrDecoderInvalidBody,
 			Code:    HttpStatusUnprocessableEntity,
 		})
 		return false
@@ -51,7 +55,7 @@ func (d BasicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 	if rb == nil {
 		logError(basicDecoderId, "request body is nil")
 		d.Responder.Respond(w, BasicResponse{
-			Message: ErrBasicDecoderInvalidBody,
+			Message: ErrDecoderInvalidBody,
 			Code:    HttpStatusUnprocessableEntity,
 		})
 		return false

@@ -12,23 +12,30 @@ import (
 //
 // ==================================================
 
-type JWTAuthenticator struct {
+type jwtAuthenticator struct {
 	// Responder for errors
-	Responder gost.Responder
+	Responder *basicResponder
 
-	TokenManager JWTTokenManager
+	TokenManager JwtTokenManager
 }
 
-type JWTTokenManager interface {
+type JwtTokenManager interface {
 	// Parses the token
-	Parse(string) (JWTClaims, error)
+	Parse(string) (JwtClaims, error)
 	// Validates the claims
-	Validate(gost.AuthInfo, JWTClaims) bool
+	Validate(gost.AuthInfo, JwtClaims) bool
 }
 
-type JWTClaims map[string]string
+type JwtClaims map[string]string
 
-func (a JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
+func NewJwtAuthenticator(tokenManager JwtTokenManager) gost.Authenticator {
+	return &jwtAuthenticator{
+		Responder:    NewBasicResponder().(*basicResponder),
+		TokenManager: tokenManager,
+	}
+}
+
+func (a jwtAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	info gost.AuthInfo) (gost.Claims, bool) {
 
 	response := BasicResponse{Code: http.StatusUnauthorized}
