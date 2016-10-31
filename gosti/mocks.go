@@ -49,6 +49,12 @@ func (tm tokenManagerMock) Validate(info gost.AuthInfo, claims JWTClaims) bool {
 //
 // ==================================================
 
+const (
+	errRequestBodyMockA = "Body A: missing fields"
+	errRequestBodyMockB = "Body B: missing fields"
+	errRequestBodyMockC = "Body C: missing fields"
+)
+
 type requestBodyMockA struct {
 	I string `json:"i"`
 	J string `json:"j"`
@@ -66,16 +72,20 @@ type requestBodyMockC struct {
 	BodyB *requestBodyMockB `json:"bodyB"`
 }
 
+type requestBodyMockD struct {
+	Z string `json:"z"`
+}
+
 func (rb requestBodyMockA) Valid() (bool, error) {
 	if rb.I == "" || rb.J == "" || rb.K == "" {
-		return false, errors.New("Body A: missing fields")
+		return false, errors.New(errRequestBodyMockA)
 	}
 	return true, nil
 }
 
 func (rb requestBodyMockB) Valid() (bool, error) {
 	if rb.X == "" || rb.Y == "" {
-		return false, errors.New("Body B: missing fields")
+		return false, errors.New(errRequestBodyMockB)
 	}
 	if rb.BodyA != nil {
 		ok, err := rb.BodyA.Valid()
@@ -88,7 +98,7 @@ func (rb requestBodyMockB) Valid() (bool, error) {
 
 func (rb requestBodyMockC) Valid() (bool, error) {
 	if rb.BodyA == nil || rb.BodyB == nil {
-		return false, errors.New("Body C: missing fields")
+		return false, errors.New(errRequestBodyMockC)
 	}
 	ok, err := rb.BodyA.Valid()
 	if !ok {
@@ -98,5 +108,9 @@ func (rb requestBodyMockC) Valid() (bool, error) {
 	if !ok {
 		return false, err
 	}
+	return true, nil
+}
+
+func (rb requestBodyMockD) Valid() (bool, error) {
 	return true, nil
 }

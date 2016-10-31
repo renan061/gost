@@ -25,67 +25,101 @@ func TestBasicDecoder(t *testing.T) {
 		y = "y_value"
 	)
 
+	// Look for requestBodyMock structs in mocks.go
 	var (
 		// A
-		validMapA  = map[string]interface{}{"i": i, "j": j, "k": k}
-		validBodyA = &requestBodyMockA{i, j, k}
+		validMapA    = map[string]interface{}{"i": i, "j": j, "k": k}
+		validBodyA   = &requestBodyMockA{i, j, k}
+		invalidMapA  = map[string]interface{}{"i": i, "j": j, "k": ""}
+		invalidBodyA = &requestBodyMockA{i, j, ""}
 
 		// B
-		validMapB = map[string]interface{}{
-			"bodyA": map[string]interface{}{
-				"i": i,
-				"j": j,
-				"k": k,
-			},
-			"x": x,
-			"y": y,
-		}
-		validBodyB = &requestBodyMockB{validBodyA, x, y}
+		validMapB   = map[string]interface{}{"x": x, "y": y}
+		validBodyB  = &requestBodyMockB{X: x, Y: y}
+		invalidMapB = map[string]interface{}{"bodyA": invalidMapA,
+			"x": x, "y": y}
+		invalidBodyB = &requestBodyMockB{invalidBodyA, x, y}
 
 		// C
-		validMapC = map[string]interface{}{
-			"bodyA": map[string]interface{}{
-				"i": i,
-				"j": j,
-				"k": k,
-			},
-			"bodyB": map[string]interface{}{
-				"bodyA": map[string]interface{}{
-					"i": i,
-					"j": j,
-					"k": k,
-				},
-				"x": x,
-				"y": y,
-			},
-		}
-		validBodyC = &requestBodyMockC{validBodyA, validBodyB}
+		validMapC = map[string]interface{}{"bodyA": validMapA,
+			"bodyB": validMapB}
+		validBodyC   = &requestBodyMockC{validBodyA, validBodyB}
+		invalidMapC  = map[string]interface{}{"bodyB": invalidMapB}
+		invalidBodyC = &requestBodyMockC{BodyB: invalidBodyB}
 	)
 
 	tests := []struct {
-		json           map[string]interface{}
+		json           interface{}
 		object         gost.RequestBody
 		expectedObject interface{}
 		expectedReturn bool
+		expectedCode   int
+		expectedBody   string
 	}{
 		{
-			// Valid Body A
+			// 1: Valid A
 			json:           validMapA,
 			object:         &requestBodyMockA{},
 			expectedObject: validBodyA,
 			expectedReturn: true,
+			expectedCode:   http.StatusOK,
+			expectedBody:   "",
 		}, {
-			// Valid Body B
+			// 2: Invalid A
+			json:           invalidMapA,
+			object:         &requestBodyMockA{},
+			expectedObject: invalidBodyA,
+			expectedReturn: false,
+			expectedCode:   HttpStatusUnprocessableEntity,
+			expectedBody:   `{"message":"` + errRequestBodyMockA + `"}`,
+		}, {
+			// 3: Valid B
 			json:           validMapB,
 			object:         &requestBodyMockB{},
 			expectedObject: validBodyB,
 			expectedReturn: true,
+			expectedCode:   http.StatusOK,
+			expectedBody:   "",
 		}, {
-			// Valid Body C
+			// 4: Invalid B
+			json:           invalidMapB,
+			object:         &requestBodyMockB{},
+			expectedObject: invalidBodyB,
+			expectedReturn: false,
+			expectedCode:   HttpStatusUnprocessableEntity,
+			expectedBody:   `{"message":"` + errRequestBodyMockA + `"}`,
+		}, {
+			// 5: Valid C
 			json:           validMapC,
 			object:         &requestBodyMockC{},
 			expectedObject: validBodyC,
 			expectedReturn: true,
+			expectedCode:   http.StatusOK,
+			expectedBody:   "",
+		}, {
+			// 6: Invalid C
+			json:           invalidMapC,
+			object:         &requestBodyMockC{},
+			expectedObject: invalidBodyC,
+			expectedReturn: false,
+			expectedCode:   HttpStatusUnprocessableEntity,
+			expectedBody:   `{"message":"` + errRequestBodyMockC + `"}`,
+		}, {
+			// 7: Empty body
+			json:           map[string]interface{}{"irrelevant": "data"},
+			object:         &requestBodyMockD{},
+			expectedObject: &requestBodyMockD{},
+			expectedReturn: true,
+			expectedCode:   http.StatusOK,
+			expectedBody:   "",
+		}, {
+			// 7: JSON null
+			json:           new(string),
+			object:         &requestBodyMockD{},
+			expectedObject: &requestBodyMockD{},
+			expectedReturn: false,
+			expectedCode:   HttpStatusUnprocessableEntity,
+			expectedBody:   `{"message":"` + ErrBasicDecoderInvalidBody + `"}`,
 		},
 	}
 
@@ -95,19 +129,28 @@ func TestBasicDecoder(t *testing.T) {
 	var jsonBytes []byte
 	var ok bool
 
-	for _, test := range tests {
+	for num, test := range tests {
 		jsonBytes, _ = json.Marshal(test.json)
 		r, _ = http.NewRequest("POST", "/test", bytes.NewReader(jsonBytes))
 		w = httptest.NewRecorder()
 		ok = decoder.Decode(w, r, test.object)
 		r.Body.Close()
 
-		if ok != test.expectedReturn {
-			t.Errorf("wrong return: wanted %v, got %v", test.expectedReturn, ok)
-		}
 		if !reflect.DeepEqual(test.object, test.expectedObject) {
-			t.Errorf("unmatching objects: wanted %v, got %v",
+			t.Errorf("%v: unmatching objects: wanted %v, got %v", num+1,
 				test.expectedObject, test.object)
+		}
+		if ok != test.expectedReturn {
+			t.Errorf("%v: wrong return: wanted %v, got %v", num+1,
+				test.expectedReturn, ok)
+		}
+		if code := w.Code; code != test.expectedCode {
+			t.Errorf("%v: wrong status code: wanted %v, got %v", num+1,
+				test.expectedCode, code)
+		}
+		if body := w.Body.String(); body != test.expectedBody {
+			t.Errorf("%v: wrong body: wanted %v, got %v", num+1,
+				test.expectedBody, body)
 		}
 	}
 }
