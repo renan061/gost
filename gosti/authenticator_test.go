@@ -95,7 +95,6 @@ func testJwtAuth(w *httptest.ResponseRecorder, r *http.Request, t *testing.T,
 		c := map[string]string(claims.(JWTClaims))
 		if !reflect.DeepEqual(expectedClaims, c) {
 			t.Errorf("unmatching claims: wanted %v, got %v", expectedClaims, c)
-			return
 		}
 	}
 }
