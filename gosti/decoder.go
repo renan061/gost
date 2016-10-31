@@ -21,7 +21,7 @@ const (
 
 type basicDecoder struct {
 	// Responder for errors
-	Responder *basicResponder
+	*basicResponder
 }
 
 func NewBasicDecoder() gost.Decoder {
@@ -35,7 +35,7 @@ func (d basicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1*mb))
 	if err != nil {
 		logError(basicDecoderId, "")
-		d.Responder.Respond(w, BasicResponse{
+		d.Respond(w, BasicResponse{
 			Message: ErrDecoderInternal,
 			Code:    http.StatusInternalServerError,
 		})
@@ -45,7 +45,7 @@ func (d basicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 	// Parsing the json body
 	if err := json.Unmarshal(body, rb); err != nil {
 		logError(basicDecoderId, err.Error())
-		d.Responder.Respond(w, BasicResponse{
+		d.Respond(w, BasicResponse{
 			Message: ErrDecoderInvalidBody,
 			Code:    HttpStatusUnprocessableEntity,
 		})
@@ -54,7 +54,7 @@ func (d basicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 
 	if rb == nil {
 		logError(basicDecoderId, "request body is nil")
-		d.Responder.Respond(w, BasicResponse{
+		d.Respond(w, BasicResponse{
 			Message: ErrDecoderInvalidBody,
 			Code:    HttpStatusUnprocessableEntity,
 		})
@@ -64,7 +64,7 @@ func (d basicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 	// Checking if the data inside the body is valid
 	if ok, err := rb.Valid(); !ok {
 		logError(basicDecoderId, err.Error())
-		d.Responder.Respond(w, BasicResponse{
+		d.Respond(w, BasicResponse{
 			Message: err.Error(),
 			Code:    HttpStatusUnprocessableEntity,
 		})

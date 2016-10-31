@@ -14,7 +14,7 @@ import (
 
 type jwtAuthenticator struct {
 	// Responder for errors
-	Responder *basicResponder
+	*basicResponder
 
 	TokenManager JwtTokenManager
 }
@@ -30,8 +30,8 @@ type JwtClaims map[string]string
 
 func NewJwtAuthenticator(tokenManager JwtTokenManager) gost.Authenticator {
 	return &jwtAuthenticator{
-		Responder:    NewBasicResponder().(*basicResponder),
-		TokenManager: tokenManager,
+		NewBasicResponder().(*basicResponder),
+		tokenManager,
 	}
 }
 
@@ -45,7 +45,7 @@ func (a jwtAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	authStr := r.Header.Get("Authorization")
 	if authStr == "" {
 		logError(jwtAuthenticatorId, "empty header")
-		a.Responder.Respond(w, response)
+		a.Respond(w, response)
 		return nil, false
 	}
 
@@ -53,12 +53,12 @@ func (a jwtAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	strs := strings.Split(authStr, " ")
 	if len(strs) != 2 {
 		logError(jwtAuthenticatorId, "invalid header")
-		a.Responder.Respond(w, response)
+		a.Respond(w, response)
 		return nil, false
 	}
 	if scheme := strs[0]; scheme != "Bearer" {
 		logError(jwtAuthenticatorId, "invalid header")
-		a.Responder.Respond(w, response)
+		a.Respond(w, response)
 		return nil, false
 	}
 
@@ -67,14 +67,14 @@ func (a jwtAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request,
 	claims, err := a.TokenManager.Parse(token)
 	if err != nil {
 		logError(jwtAuthenticatorId, "invalid token ("+err.Error()+")")
-		a.Responder.Respond(w, response)
+		a.Respond(w, response)
 		return nil, false
 	}
 
 	// Validates the claims
 	if !a.TokenManager.Validate(info, claims) {
 		logError(jwtAuthenticatorId, "could not validate")
-		a.Responder.Respond(w, response)
+		a.Respond(w, response)
 		return nil, false
 	}
 
