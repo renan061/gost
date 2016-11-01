@@ -5,7 +5,7 @@ import (
 )
 
 type RequestBody interface {
-	Valid() (bool, error)
+	Valid() error
 }
 
 type Decoder interface {

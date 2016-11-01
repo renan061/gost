@@ -1,6 +1,7 @@
 package gosti
 
 import (
+	"github.com/renan061/gost"
 	"log"
 )
 
@@ -18,4 +19,16 @@ const (
 // Auxiliary function
 func logError(id, err string) {
 	log.Println(gostiId + "." + id + ": " + err)
+}
+
+func NewBasicGost(tokenManager JwtTokenManager) gost.Gost {
+	return struct {
+		gost.Authenticator
+		gost.Decoder
+		gost.Responder
+	}{
+		NewJwtAuthenticator(tokenManager),
+		NewBasicDecoder(),
+		NewBasicResponder(),
+	}
 }

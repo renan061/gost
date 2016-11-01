@@ -62,7 +62,7 @@ func (d basicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 	}
 
 	// Checking if the data inside the body is valid
-	if ok, err := rb.Valid(); !ok {
+	if err := rb.Valid(); err != nil {
 		logError(basicDecoderId, err.Error())
 		d.Respond(w, BasicResponse{
 			Message: err.Error(),

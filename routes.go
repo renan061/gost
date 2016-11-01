@@ -1,5 +1,10 @@
 package gost
 
+//
+// TODO:
+// - Move this from here to gosti
+//
+
 import (
 	"github.com/gorilla/mux"
 	"net/http"

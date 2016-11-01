@@ -78,41 +78,41 @@ type requestBodyMockD struct {
 	Z string `json:"z"`
 }
 
-func (rb requestBodyMockA) Valid() (bool, error) {
+func (rb requestBodyMockA) Valid() error {
 	if rb.I == "" || rb.J == "" || rb.K == "" {
-		return false, errors.New(errRequestBodyMockA)
+		return errors.New(errRequestBodyMockA)
 	}
-	return true, nil
+	return nil
 }
 
-func (rb requestBodyMockB) Valid() (bool, error) {
+func (rb requestBodyMockB) Valid() error {
 	if rb.X == "" || rb.Y == "" {
-		return false, errors.New(errRequestBodyMockB)
+		return errors.New(errRequestBodyMockB)
 	}
 	if rb.BodyA != nil {
-		ok, err := rb.BodyA.Valid()
-		if !ok {
-			return false, err
+		err := rb.BodyA.Valid()
+		if err != nil {
+			return err
 		}
 	}
-	return true, nil
+	return nil
 }
 
-func (rb requestBodyMockC) Valid() (bool, error) {
+func (rb requestBodyMockC) Valid() error {
 	if rb.BodyA == nil || rb.BodyB == nil {
-		return false, errors.New(errRequestBodyMockC)
+		return errors.New(errRequestBodyMockC)
 	}
-	ok, err := rb.BodyA.Valid()
-	if !ok {
-		return false, err
+	err := rb.BodyA.Valid()
+	if err != nil {
+		return err
 	}
-	ok, err = rb.BodyB.Valid()
-	if !ok {
-		return false, err
+	err = rb.BodyB.Valid()
+	if err != nil {
+		return err
 	}
-	return true, nil
+	return nil
 }
 
-func (rb requestBodyMockD) Valid() (bool, error) {
-	return true, nil
+func (rb requestBodyMockD) Valid() error {
+	return nil
 }

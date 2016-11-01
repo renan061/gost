@@ -6,5 +6,8 @@
 all:
 	@- go build
 
-test: all
+test:
 	@- go test ./...
+
+ex: # Example
+	@- go run example/main.go

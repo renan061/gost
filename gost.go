@@ -1,6 +1,6 @@
 package gost
 
-type Gost struct {
+type Gost interface {
 	Authenticator
 	Decoder
 	Responder
