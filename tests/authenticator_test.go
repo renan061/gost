@@ -1,6 +1,8 @@
-package gosti
+package tests
 
 import (
+	"github.com/renan061/gost"
+	"github.com/renan061/gost/gosti"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -14,40 +16,40 @@ const (
 )
 
 var (
-	authenticator *JWTAuthenticator
-	tm            *tokenManager
+	authenticator gost.Authenticator
+	tm            *tokenManagerMock
 )
 
 func init() {
-	tm = &tokenManager{[]byte(jwtEncKey)}
-	authenticator = &JWTAuthenticator{
-		Responder:    &BasicResponder{},
-		TokenManager: tm,
-	}
+	tm = &tokenManagerMock{[]byte(jwtEncKey)}
+	authenticator = gosti.NewJwtAuthenticator(tm)
 }
 
 // ==================================================
 //
 //	JWTAuthenticator
 //
+//	TODO
+//	- Refactor to look like responder_test.go
+//
 // ==================================================
 
 func TestJWTAuthenticator_EmptyHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
-	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
+	testJwtAuth(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 }
 
 func TestJWTAuthenticator_InvalidHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test1", nil)
 	r.Header.Set("Authorization", "MaybeBearer MaybeToken SomethingElse")
-	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
+	testJwtAuth(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 
 	w = httptest.NewRecorder()
 	r, _ = http.NewRequest("GET", "/test2", nil)
 	r.Header.Set("Authorization", "NotBearer Token")
-	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
+	testJwtAuth(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 }
 
 func TestJWTAuthenticator_InvalidToken(t *testing.T) {
@@ -58,7 +60,7 @@ func TestJWTAuthenticator_InvalidToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
-	testJwt(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
+	testJwtAuth(w, r, t, http.StatusUnauthorized, jwtBodyErrMsg, nil, false)
 }
 
 func TestJWTAuthenticator_Ok(t *testing.T) {
@@ -67,11 +69,11 @@ func TestJWTAuthenticator_Ok(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/test", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
-	testJwt(w, r, t, http.StatusOK, "", claims, true)
+	testJwtAuth(w, r, t, http.StatusOK, "", claims, true)
 }
 
 // Auxiliary
-func testJwt(w *httptest.ResponseRecorder, r *http.Request, t *testing.T,
+func testJwtAuth(w *httptest.ResponseRecorder, r *http.Request, t *testing.T,
 	expectedCode int, expectedBody string, expectedClaims map[string]string,
 	expectedOk bool) {
 
@@ -89,10 +91,9 @@ func testJwt(w *httptest.ResponseRecorder, r *http.Request, t *testing.T,
 		t.Errorf("wrong body: wanted %v, got %v", expectedBody, body)
 	}
 	if claims != nil {
-		c := map[string]string(claims.(JWTClaims))
+		c := map[string]string(claims.(gosti.JwtClaims))
 		if !reflect.DeepEqual(expectedClaims, c) {
 			t.Errorf("unmatching claims: wanted %v, got %v", expectedClaims, c)
-			return
 		}
 	}
 }
