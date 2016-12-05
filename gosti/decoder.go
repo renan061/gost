@@ -34,7 +34,7 @@ func (d basicDecoder) Decode(w http.ResponseWriter, r *http.Request,
 	// Reading the request's body
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1*mb))
 	if err != nil {
-		logError(basicDecoderId, "")
+		logError(basicDecoderId, err.Error())
 		d.Respond(w, BasicResponse{
 			Message: ErrDecoderInternal,
 			Code:    http.StatusInternalServerError,
