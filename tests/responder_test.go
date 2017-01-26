@@ -35,19 +35,17 @@ func TestBasicResponder(t *testing.T) {
 			// Invalid response
 			response:       "not_basic_response",
 			expectedCode:   http.StatusInternalServerError,
-			expectedBody:   "\n", // Does not return ""
+			expectedBody:   "\n", // Does not return empty string
 			expectedReturn: false,
 		}, {
 			// Default Response Code
 			response:       gosti.BasicResponse{},
 			expectedCode:   http.StatusOK,
-			expectedBody:   newResponseBody("", ""),
 			expectedReturn: true,
 		}, {
 			// Given Response Code
 			response:       gosti.BasicResponse{Code: http.StatusCreated},
 			expectedCode:   http.StatusCreated,
-			expectedBody:   newResponseBody("", ""),
 			expectedReturn: true,
 		}, {
 			// Response with Message
@@ -83,7 +81,7 @@ func TestBasicResponder(t *testing.T) {
 				test.expectedCode, code)
 		}
 		if body := w.Body.String(); body != test.expectedBody {
-			t.Errorf("wrong body: wanted %v, got %v", test.expectedBody, body)
+			t.Errorf("wrong body: wanted %x, got %x", test.expectedBody, body)
 		}
 		if ok != test.expectedReturn {
 			t.Errorf("wrong return: wanted %v, got %v", test.expectedReturn, ok)

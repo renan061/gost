@@ -1,6 +1,5 @@
 #
 # Renan Almeida
-# gosti
 #
 
 all:

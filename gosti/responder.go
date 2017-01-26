@@ -34,19 +34,6 @@ func (_ basicResponder) Respond(w http.ResponseWriter, r gost.Response) bool {
 		return false
 	}
 
-	var j []byte
-	var err error
-	if response.PrettyJson {
-		j, err = json.MarshalIndent(response, "", "    ")
-	} else {
-		j, err = json.Marshal(response)
-	}
-	if err != nil {
-		http.Error(w, "", http.StatusInternalServerError)
-		logError(basicResponderId, err.Error())
-		return false
-	}
-
 	// Default header fields
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -57,11 +44,26 @@ func (_ basicResponder) Respond(w http.ResponseWriter, r gost.Response) bool {
 		w.WriteHeader(http.StatusOK)
 	}
 
-	_, err = w.Write(j)
-	if err != nil {
-		http.Error(w, "", http.StatusInternalServerError)
-		logError(basicResponderId, err.Error())
-		return false
+	if response.Data != nil || response.Message != "" {
+		var j []byte
+		var err error
+		if response.PrettyJson {
+			j, err = json.MarshalIndent(response, "", "    ")
+		} else {
+			j, err = json.Marshal(response)
+		}
+		if err != nil {
+			http.Error(w, "", http.StatusInternalServerError)
+			logError(basicResponderId, err.Error())
+			return false
+		}
+
+		_, err = w.Write(j)
+		if err != nil {
+			http.Error(w, "", http.StatusInternalServerError)
+			logError(basicResponderId, err.Error())
+			return false
+		}
 	}
 
 	return true
