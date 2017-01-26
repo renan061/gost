@@ -28,10 +28,12 @@ type Routes []Route
 
 func NewRouter(routes Routes, decorators RouteDecorators) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
-	var handler http.Handler
+	var handler, previous http.Handler
 	for _, route := range routes {
+		previous = route.HandlerFunc
 		for _, decorator := range decorators {
-			handler = decorator(route.HandlerFunc)
+			handler = decorator(previous)
+			previous = handler
 		}
 		r.Methods(route.Method).Path(route.Prefix + route.Uri).
 			Name(route.Name).Handler(handler)
